@@ -480,6 +480,32 @@ utf8_strnlen (const char *string, int bytes)
     return length;
 }
 
+int
+wcswidth2(const wchar_t *s, size_t n)
+{
+    int w, q;
+
+    w = 0;
+    while (n && *s) {
+        if (wcsncmp(s, L"♿", 1) == 0)
+        {
+            w += 2;
+        }
+        else
+        {
+            q = wcwidth(*s);
+            if (q == -1)
+                return (-1);
+            w += q;
+        }
+
+        s++;
+        n--;
+    }
+
+    return w;
+}
+
 /*
  * Gets number of chars needed on screen to display the UTF-8 string.
  *
@@ -518,7 +544,7 @@ utf8_strlen_screen (const char *string)
 
     if (mbstowcs (ptr_wstring, string, num_char) != (size_t)(-1))
     {
-        length = wcswidth (ptr_wstring, num_char);
+        length = wcswidth2 (ptr_wstring, num_char);
         /*
          * if the char is non-printable, wcswidth returns -1
          * (for example the length of the snowman without snow (U+26C4) == -1)

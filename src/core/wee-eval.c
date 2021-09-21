@@ -1270,8 +1270,8 @@ end:
 char *
 eval_string_hdata (const char *text, struct t_eval_context *eval_context)
 {
-    const char *pos_vars, *pos1, *pos2;
-    char *value, *hdata_name, *pointer_name, *tmp;
+    const char *pos_vars, *pos1, *pos2, *pos3, *pos4;
+    char *value, *hdata_name, *pointer_name, *pointer_list_name, *search_var, *search_value, *tmp;
     void *pointer;
     struct t_hdata *hdata;
     int rc;
@@ -1339,14 +1339,28 @@ eval_string_hdata (const char *text, struct t_eval_context *eval_context)
         }
         else
         {
-            pointer = hdata_get_list (hdata, pointer_name);
-            if (!pointer)
+            pos3 = strchr (pointer_name, ':');
+            if (pos3)
             {
-                pointer = hashtable_get (eval_context->pointers, pointer_name);
+                char search[128];
+                pos4 = strchr (pos3, ',');
+                pointer_list_name = string_strndup (pointer_name, pos3 - pointer_name);
+                search_var = string_strndup (pos3 + 1, pos4 - pos3 - 1);
+                search_value = pos4 + 1;
+                snprintf(search, sizeof(search), "${%s.%s}==%s", hdata_name, search_var, search_value);
+                pointer = hdata_search(hdata, hdata_get_list(hdata, pointer_list_name), search, 1);
+            }
+            else
+            {
+                pointer = hdata_get_list (hdata, pointer_name);
                 if (!pointer)
-                    goto end;
-                if (!hdata_check_pointer (hdata, NULL, pointer))
-                    goto end;
+                {
+                    pointer = hashtable_get (eval_context->pointers, pointer_name);
+                    if (!pointer)
+                        goto end;
+                    if (!hdata_check_pointer (hdata, NULL, pointer))
+                        goto end;
+                }
             }
         }
     }

@@ -51,7 +51,7 @@ set -x
 mkdir "$BUILDDIR"
 cd "$BUILDDIR"
 
-run cmake .. -DENABLE_MAN=ON -DENABLE_DOC=ON -DENABLE_TESTS=ON "${BUILDARGS}"
+run cmake .. -DCMAKE_BUILD_TYPE=Debug -DENABLE_MAN=ON -DENABLE_DOC=ON -DENABLE_TESTS=ON "${BUILDARGS}"
 if [ -f "build.ninja" ]; then
     ninja -v
     ninja -v changelog

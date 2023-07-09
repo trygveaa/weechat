@@ -30,13 +30,16 @@
 
 #include "../core/weechat.h"
 #include "../core/core-config.h"
+#include "../core/core-hashtable.h"
 #include "../core/core-hook.h"
 #include "../core/core-input.h"
 #include "../core/core-string.h"
 #include "../core/core-utf8.h"
 #include "../plugins/plugin.h"
 #include "gui-input.h"
+#include "gui-bar-window.h"
 #include "gui-buffer.h"
+#include "gui-chat.h"
 #include "gui-completion.h"
 #include "gui-cursor.h"
 #include "gui-history.h"
@@ -2049,4 +2052,81 @@ gui_input_redo (struct t_gui_buffer *buffer)
 
     buffer->ptr_input_undo = (buffer->ptr_input_undo)->next_undo;
     gui_input_undo_use (buffer, buffer->ptr_input_undo);
+}
+
+/*
+ * Callback called when a mouse action occurs in input bar.
+ */
+
+int
+input_hsignal_cb (const void *pointer, void *data, const char *signal,
+                    struct t_hashtable *hashtable)
+{
+    const char *ptr_bar_window;
+    unsigned long value;
+    struct t_gui_bar_window *bar_window;
+    int rc;
+
+    ptr_bar_window = hashtable_get (hashtable, "_bar_window");
+    if (!ptr_bar_window || !ptr_bar_window[0])
+        return WEECHAT_RC_ERROR;
+
+    rc = sscanf (ptr_bar_window, "%lx", &value);
+    if ((rc == EOF) || (rc == 0))
+        return WEECHAT_RC_ERROR;
+
+    bar_window = (struct t_gui_bar_window *)value;
+
+    gui_chat_printf(NULL, "width: %d", bar_window->width);
+
+    /* int i, input_has_multiple_lines, y_start; */
+    /* char *pos; */
+    /*  */
+    /* if (!buffer->input || !buffer->input_buffer) */
+    /*     return; */
+    /*  */
+    /* y_start = 0; */
+    /*  */
+    /* if (CONFIG_BOOLEAN(config_look_input_multiline_lead_linebreak)) */
+    /* { */
+    /*     pos = buffer->input_buffer; */
+    /*     input_has_multiple_lines = 0; */
+    /*     while (pos[0]) */
+    /*     { */
+    /*         if (pos[0] == '\n') */
+    /*         { */
+    /*             input_has_multiple_lines = 1; */
+    /*             break; */
+    /*         } */
+    /*         pos = (char *)utf8_next_char (pos); */
+    /*     } */
+    /*     y_start = input_has_multiple_lines ? 1 : 0; */
+    /* } */
+    /*  */
+    /* pos = buffer->input_buffer; */
+    /*  */
+    /* for (i = 0; pos[0] && i < y - y_start; i++) */
+    /* { */
+    /*     pos = (char *)utf8_end_of_line (pos); */
+    /*     pos = (char *)utf8_next_char (pos); */
+    /* } */
+    /*  */
+    /* for (i = 0; pos[0] && (pos[0] != '\n') && (i < x); i++) */
+    /* { */
+    /*     pos = (char *)utf8_next_char (pos); */
+    /* } */
+    /*  */
+    /* buffer->input_buffer_pos = utf8_pos(buffer->input_buffer, pos - buffer->input_buffer); */
+    /* gui_input_text_cursor_moved_signal (buffer); */
+}
+
+/*
+ * Initializes some variables for input (called before reading WeeChat
+ * configuration file).
+ */
+
+void
+gui_input_init ()
+{
+    hook_hsignal (NULL, "input_mouse", &input_hsignal_cb, NULL, NULL);
 }

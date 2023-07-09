@@ -84,6 +84,7 @@
 #include "../gui/gui-color.h"
 #include "../gui/gui-completion.h"
 #include "../gui/gui-focus.h"
+#include "../gui/gui-input.h"
 #include "../gui/gui-key.h"
 #include "../gui/gui-layout.h"
 #include "../gui/gui-main.h"
@@ -651,6 +652,7 @@ weechat_init (int argc, char *argv[], void (*gui_init_cb)(void))
     debug_init ();                      /* hook signals for debug           */
     gui_color_init ();                  /* initialize colors                */
     gui_chat_init ();                   /* initialize chat                  */
+    gui_input_init ();                   /* initialize chat                  */
     command_init ();                    /* initialize WeeChat commands      */
     completion_init ();                 /* add core completion hooks        */
     gui_key_init ();                    /* init keys                        */

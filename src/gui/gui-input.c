@@ -1643,6 +1643,54 @@ gui_input_move_next_line (struct t_gui_buffer *buffer)
 }
 
 /*
+ * Sets cursor at position (x,y).
+ */
+
+void
+gui_input_move_xy (struct t_gui_buffer *buffer, int x, int y)
+{
+    int i, input_has_multiple_lines, y_start;
+    char *pos;
+
+    if (!buffer->input || !buffer->input_buffer)
+        return;
+
+    y_start = 0;
+
+    if (CONFIG_BOOLEAN(config_look_input_multiline_lead_linebreak))
+    {
+        pos = buffer->input_buffer;
+        input_has_multiple_lines = 0;
+        while (pos[0])
+        {
+            if (pos[0] == '\n')
+            {
+                input_has_multiple_lines = 1;
+                break;
+            }
+            pos = (char *)utf8_next_char (pos);
+        }
+        y_start = input_has_multiple_lines ? 1 : 0;
+    }
+
+    pos = buffer->input_buffer;
+
+    for (i = 0; pos[0] && i < y - y_start; i++)
+    {
+        pos = (char *)utf8_end_of_line (pos);
+        pos = (char *)utf8_next_char (pos);
+    }
+
+    for (i = 0; pos[0] && (pos[0] != '\n') && (i < x); i++)
+    {
+        pos = (char *)utf8_next_char (pos);
+    }
+
+    buffer->input_buffer_pos = utf8_pos(buffer->input_buffer, pos - buffer->input_buffer);
+    gui_input_text_cursor_moved_signal (buffer);
+}
+
+/*
  * Recalls previous command from local or global history.
  */
 

@@ -3571,6 +3571,9 @@ COMMAND_CALLBACK(hotlist)
 
 COMMAND_CALLBACK(input)
 {
+    long number1, number2;
+    char *error;
+
     /* make C compiler happy */
     (void) pointer;
     (void) data;
@@ -3651,6 +3654,20 @@ COMMAND_CALLBACK(input)
         gui_input_move_previous_line (buffer);
     else if (string_strcmp (argv[1], "move_next_line") == 0)
         gui_input_move_next_line (buffer);
+    else if (string_strcmp (argv[1], "move_xy") == 0)
+    {
+        if (argc < 4)
+            COMMAND_ERROR;
+        error = NULL;
+        number1 = strtol (argv[2], &error, 10);
+        if (error && error[0])
+            COMMAND_ERROR;
+        error = NULL;
+        number2 = strtol (argv[3], &error, 10);
+        if (error && error[0])
+            COMMAND_ERROR;
+        gui_input_move_xy (buffer, number1, number2);
+    }
     else if (string_strcmp (argv[1], "history_previous") == 0)
         gui_input_history_local_previous (buffer);
     else if (string_strcmp (argv[1], "history_next") == 0)
@@ -9092,6 +9109,7 @@ command_init (void)
             N_("> raw[move_next_word]: move cursor to next word"),
             N_("> raw[move_previous_line]: move cursor to previous line"),
             N_("> raw[move_next_line]: move cursor to next line"),
+            N_("> raw[move_xy]: move cursor to position x,y"),
             N_("> raw[history_previous]: recall previous command in current buffer "
                "history"),
             N_("> raw[history_next]: recall next command in current buffer history"),
@@ -9128,7 +9146,7 @@ command_init (void)
         "move_beginning_of_line || move_beginning_of_input || "
         "move_end_of_line || move_end_of_input || "
         "move_previous_char || move_next_char || move_previous_word || "
-        "move_next_word || move_previous_line || move_next_line || "
+        "move_next_word || move_previous_line || move_next_line || move_xy || "
         "history_previous || history_next || history_global_previous || "
         "history_global_next || history_use_get_next || "
         "grab_key || grab_key_command || "

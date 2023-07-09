@@ -78,6 +78,7 @@ extern void gui_input_move_previous_word (struct t_gui_buffer *buffer);
 extern void gui_input_move_next_word (struct t_gui_buffer *buffer);
 extern void gui_input_move_previous_line (struct t_gui_buffer *buffer);
 extern void gui_input_move_next_line (struct t_gui_buffer *buffer);
+extern void gui_input_move_xy (struct t_gui_buffer *buffer, int x, int y);
 extern void gui_input_history_local_previous (struct t_gui_buffer *buffer);
 extern void gui_input_history_local_next (struct t_gui_buffer *buffer);
 extern void gui_input_history_global_previous (struct t_gui_buffer *buffer);

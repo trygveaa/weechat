@@ -282,6 +282,7 @@ gui_key_default_bindings (int context, int create_option)
         BIND("@item(buffer_nicklist):button1-gesture-left-long", "/window ${_window_number};/kickban ${nick}");
         BIND("@item(buffer_nicklist):button2-gesture-left",      "/window ${_window_number};/ban ${nick}");
         /* mouse events on input */
+        BIND("@bar(input):button1", "${if:${_bar_item_name}==input_text?/input move_xy ${_bar_item_col} ${_bar_item_line}:${if:${_bar_item_name}==?/input move_end_of_input:/mute}}");
         BIND("@bar(input):button2", "/input grab_mouse_area");
         /* mouse wheel on any bar */
         BIND("@bar:wheelup",   "/bar scroll ${_bar_name} ${_window_number} -20%");

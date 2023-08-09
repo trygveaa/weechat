@@ -22,6 +22,7 @@
 
 #undef _
 
+#include <locale.h>
 #include <EXTERN.h>
 #include <perl.h>
 #include <XSUB.h>
@@ -506,6 +507,7 @@ weechat_perl_load (const char *filename, const char *code)
     struct stat buf;
     char *perl_code;
     int length;
+    locale_t weechat_locale;
 #ifndef MULTIPLICITY
     char pkgname[64];
 #endif /* MULTIPLICITY */
@@ -543,6 +545,8 @@ weechat_perl_load (const char *filename, const char *code)
     perl_current_script_filename = filename;
     perl_registered_script = NULL;
 
+    weechat_locale = uselocale((locale_t) 0);
+
 #ifdef MULTIPLICITY
     perl_current_interpreter = perl_alloc ();
 
@@ -552,7 +556,7 @@ weechat_perl_load (const char *filename, const char *code)
                         weechat_gettext ("%s%s: unable to create new "
                                          "sub-interpreter"),
                         weechat_prefix ("error"), PERL_PLUGIN_NAME);
-        return NULL;
+        goto error;
     }
 
     snprintf (str_warning, sizeof (str_warning),
@@ -571,7 +575,7 @@ weechat_perl_load (const char *filename, const char *code)
         strlen (str_error) - 2 + 4 + strlen ((code) ? code : filename) + 4 + 1;
     perl_code = malloc (length);
     if (!perl_code)
-        return NULL;
+        goto error;
     snprintf (perl_code, length, perl_weechat_code,
               str_warning,
               str_error,
@@ -586,7 +590,7 @@ weechat_perl_load (const char *filename, const char *code)
         strlen ((code) ? code : filename) + 4 + 1;
     perl_code = malloc (length);
     if (!perl_code)
-        return NULL;
+        goto error;
     snprintf (perl_code, length, perl_weechat_code,
               pkgname,
               str_warning,
@@ -621,7 +625,7 @@ weechat_perl_load (const char *filename, const char *code)
             perl_current_script = NULL;
         }
 
-        return NULL;
+        goto error;
     }
 
     if (!perl_registered_script)
@@ -634,13 +638,15 @@ weechat_perl_load (const char *filename, const char *code)
         perl_destruct (perl_current_interpreter);
         perl_free (perl_current_interpreter);
 #endif /* MULTIPLICITY */
-        return NULL;
+        goto error;
     }
     perl_current_script = perl_registered_script;
 
 #ifndef MULTIPLICITY
     perl_current_script->interpreter = strdup (pkgname);
 #endif /* MULTIPLICITY */
+
+    uselocale(weechat_locale);
 
     /*
      * set input/close callbacks for buffers created by this script
@@ -657,6 +663,10 @@ weechat_perl_load (const char *filename, const char *code)
                                      perl_current_script->filename);
 
     return perl_current_script;
+
+error:
+    uselocale(weechat_locale);
+    return NULL;
 }
 
 /*

@@ -23,6 +23,7 @@
 #include "config.h"
 #endif
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -85,7 +86,7 @@ void
 gui_mouse_enable ()
 {
     gui_mouse_enabled = 1;
-    fprintf (stderr, "\033[?1005h\033[?1000h\033[?1002h");
+    fprintf (stderr, "\033[?1005h\033[?1006h\033[?1000h\033[?1002h");
     fflush (stderr);
 
     (void) hook_signal_send ("mouse_enabled",
@@ -100,7 +101,7 @@ void
 gui_mouse_disable ()
 {
     gui_mouse_enabled = 0;
-    fprintf (stderr, "\033[?1002l\033[?1000l\033[?1005l");
+    fprintf (stderr, "\033[?1002l\033[?1000l\033[?1006l\033[?1005l");
     fflush (stderr);
 
     (void) hook_signal_send ("mouse_disabled",
@@ -231,9 +232,9 @@ gui_mouse_event_timer_cb (const void *pointer, void *data, int remaining_calls)
  */
 
 void
-gui_mouse_event_init ()
+gui_mouse_event_init (int type)
 {
-    gui_mouse_event_pending = 1;
+    gui_mouse_event_pending = type;
 
     if (gui_mouse_event_timer)
         unhook (gui_mouse_event_timer);
@@ -244,15 +245,97 @@ gui_mouse_event_init ()
                                         &gui_mouse_event_timer_cb, NULL, NULL);
 }
 
+const char *
+gui_mouse_event_gesture ()
+{
+    double diff_x, diff_y, distance, angle, pi4;
+    static char key[128];
+
+    key[0] = '\0';
+
+    /*
+     * Mouse gesture: if (x,y) on release is different from (x,y) on click,
+     * compute distance and angle between 2 points.
+     *
+     * Distance: sqrt((x2-x1)²+(y2-y1)²)
+     * Angle   : atan2(x1-x1, y2-y1)
+     *
+     * Angle:
+     *
+     *              3.14             pi
+     *               /\
+     *       -2.35   ||   2.35       3/4 * pi
+     *               ||
+     *   -1.57  /----++----\  1.57   1/2 * pi
+     *          \----++----/
+     *               ||
+     *       -0.78   ||   0.78       1/4 * pi
+     *               \/
+     *              0.00             0
+     *
+     * Possible returned gestures are:
+     *
+     *   key name                   | dist. | angle
+     *   ---------------------------+-------+--------------------------
+     *   buttonX-gesture-up         | 3..19 | -2.35..-3.14 + 2.35..3.14
+     *   buttonX-gesture-up-long    | >= 20 |
+     *   buttonX-gesture-down       | 3..19 | -0.78..0.78
+     *   buttonX-gesture-down-long  | >= 20 |
+     *   buttonX-gesture-left       | 3..39 | -0.78..-2.35
+     *   buttonX-gesture-left-long  | >= 40 |
+     *   buttonX-gesture-right      | 3..39 |  0.78..2.35
+     *   buttonX-gesture-right-long | >= 40 |
+     */
+
+    if ((gui_mouse_event_x[0] != gui_mouse_event_x[1])
+            || (gui_mouse_event_y[0] != gui_mouse_event_y[1]))
+    {
+        diff_x = gui_mouse_event_x[1] - gui_mouse_event_x[0];
+        diff_y = gui_mouse_event_y[1] - gui_mouse_event_y[0];
+        distance = sqrt ((diff_x * diff_x) + (diff_y * diff_y));
+        if (distance >= 3)
+        {
+            angle = atan2 ((double)(gui_mouse_event_x[1] - gui_mouse_event_x[0]),
+                           (double)(gui_mouse_event_y[1] - gui_mouse_event_y[0]));
+            pi4 = 3.14159265358979 / 4;
+            if ((angle <= pi4 * (-3)) || (angle >= pi4 * 3))
+            {
+                strcat (key, "-gesture-up");
+                if (distance >= 20)
+                    strcat (key, "-long");
+            }
+            else if ((angle >= pi4 * (-1)) && (angle <= pi4))
+            {
+                strcat (key, "-gesture-down");
+                if (distance >= 20)
+                    strcat (key, "-long");
+            }
+            else if ((angle >= pi4 * (-3)) && (angle <= pi4 * (-1)))
+            {
+                strcat (key, "-gesture-left");
+                if (distance >= 40)
+                    strcat (key, "-long");
+            }
+            else if ((angle >= pi4) && (angle <= pi4 * 3))
+            {
+                strcat (key, "-gesture-right");
+                if (distance >= 40)
+                    strcat (key, "-long");
+            }
+        }
+    }
+
+    return key;
+}
+
 /*
  * Gets key name with a mouse code.
  */
 
 const char *
-gui_mouse_event_code2key (const char *code)
+gui_mouse_event_code2key_utf8 (const char *code)
 {
     int i, x, y, code_utf8, length;
-    double diff_x, diff_y, distance, angle, pi4;
     static char key[128];
     const char *ptr_code;
 
@@ -350,78 +433,88 @@ gui_mouse_event_code2key (const char *code)
         return key;
     }
 
-    /*
-     * Mouse gesture: if (x,y) on release is different from (x,y) on click,
-     * compute distance and angle between 2 points.
-     *
-     * Distance: sqrt((x2-x1)²+(y2-y1)²)
-     * Angle   : atan2(x1-x1, y2-y1)
-     *
-     * Angle:
-     *
-     *              3.14             pi
-     *               /\
-     *       -2.35   ||   2.35       3/4 * pi
-     *               ||
-     *   -1.57  /----++----\  1.57   1/2 * pi
-     *          \----++----/
-     *               ||
-     *       -0.78   ||   0.78       1/4 * pi
-     *               \/
-     *              0.00             0
-     *
-     * Possible returned gestures are:
-     *
-     *   key name                   | dist. | angle
-     *   ---------------------------+-------+--------------------------
-     *   buttonX-gesture-up         | 3..19 | -2.35..-3.14 + 2.35..3.14
-     *   buttonX-gesture-up-long    | >= 20 |
-     *   buttonX-gesture-down       | 3..19 | -0.78..0.78
-     *   buttonX-gesture-down-long  | >= 20 |
-     *   buttonX-gesture-left       | 3..39 | -0.78..-2.35
-     *   buttonX-gesture-left-long  | >= 40 |
-     *   buttonX-gesture-right      | 3..39 |  0.78..2.35
-     *   buttonX-gesture-right-long | >= 40 |
-     */
+    strcat (key, gui_mouse_event_gesture());
 
-    if (key[0]
-        && ((gui_mouse_event_x[0] != gui_mouse_event_x[1])
-            || (gui_mouse_event_y[0] != gui_mouse_event_y[1])))
+    return key;
+}
+
+const char *
+gui_mouse_event_code2key_sgr (const char *code)
+{
+    int i, x, y, code_utf8, length, is_release;
+    char *pos;
+    static char key[128];
+    char *ptr_code;
+
+    key[0] = '\0';
+    ptr_code = code;
+
+    length = (int)strlen (code);
+    is_release = ptr_code[length - 1] == 'm';
+    ptr_code[length - 1] = '\0';
+
+    pos = strstr (code, ";");
+    if (pos)
+        pos[0] = '\0';
+
+    int a = atoi(code);
+    gui_chat_printf (NULL, "4: %d", a);
+
+    if (a & 4)
+        strcat (key, "shift-");
+    if (a & 8)
+        strcat (key, "alt-");
+    if (a & 16)
+        strcat (key, "ctrl-");
+
+    if (a & 64)
     {
-        diff_x = gui_mouse_event_x[1] - gui_mouse_event_x[0];
-        diff_y = gui_mouse_event_y[1] - gui_mouse_event_y[0];
-        distance = sqrt ((diff_x * diff_x) + (diff_y * diff_y));
-        if (distance >= 3)
-        {
-            angle = atan2 ((double)(gui_mouse_event_x[1] - gui_mouse_event_x[0]),
-                           (double)(gui_mouse_event_y[1] - gui_mouse_event_y[0]));
-            pi4 = 3.14159265358979 / 4;
-            if ((angle <= pi4 * (-3)) || (angle >= pi4 * 3))
-            {
-                strcat (key, "-gesture-up");
-                if (distance >= 20)
-                    strcat (key, "-long");
-            }
-            else if ((angle >= pi4 * (-1)) && (angle <= pi4))
-            {
-                strcat (key, "-gesture-down");
-                if (distance >= 20)
-                    strcat (key, "-long");
-            }
-            else if ((angle >= pi4 * (-3)) && (angle <= pi4 * (-1)))
-            {
-                strcat (key, "-gesture-left");
-                if (distance >= 40)
-                    strcat (key, "-long");
-            }
-            else if ((angle >= pi4) && (angle <= pi4 * 3))
-            {
-                strcat (key, "-gesture-right");
-                if (distance >= 40)
-                    strcat (key, "-long");
-            }
-        }
+        if ((a & 3) == 0)
+            strcat (key, "wheelup");
+        else if ((a & 3) == 1)
+            strcat (key, "wheeldown");
+        else if ((a & 3) == 2)
+            strcat (key, "wheelleft");
+        else if ((a & 3) == 3)
+            strcat (key, "wheelright");
     }
+    else if (a & 128)
+    {
+        if ((a & 3) == 0)
+            strcat (key, "button8");
+        else if ((a & 3) == 1)
+            strcat (key, "button9");
+        else if ((a & 3) == 2)
+            strcat (key, "button10");
+        else if ((a & 3) == 3)
+            strcat (key, "button11");
+    }
+    else
+    {
+        if ((a & 3) == 0)
+            strcat (key, "button1");
+        else if ((a & 3) == 1)
+            strcat (key, "button3");
+        else if ((a & 3) == 2)
+            strcat (key, "button2");
+    }
+
+    if (!is_release && !(a & 64))
+    {
+        strcat (key, "-event-");
+        if (a & 32) {
+            strcat (key, "drag");
+        }
+        else
+        {
+            gui_mouse_event_x[1] = gui_mouse_event_x[0];
+            gui_mouse_event_y[1] = gui_mouse_event_y[0];
+            strcat (key, "down");
+        }
+        return key;
+    }
+
+    strcat (key, gui_mouse_event_gesture());
 
     return key;
 }
@@ -434,11 +527,14 @@ void
 gui_mouse_event_end ()
 {
     const char *mouse_key;
-    int bare_event;
+    int bare_event, type;
+
+    /* gui_chat_printf (NULL, "4: %s", gui_key_combo); */
 
     if (gui_key_debug)
         gui_key_debug_print_key (gui_key_combo, NULL, NULL, NULL, 1);
 
+    type = gui_mouse_event_pending;
     gui_mouse_event_pending = 0;
 
     /* end mouse event timer */
@@ -449,7 +545,10 @@ gui_mouse_event_end ()
     }
 
     /* get key from mouse code */
-    mouse_key = gui_mouse_event_code2key (gui_key_combo);
+    if (type == 1)
+        mouse_key = gui_mouse_event_code2key_utf8 (gui_key_combo);
+    else
+        mouse_key = gui_mouse_event_code2key_sgr (gui_key_combo);
     if (mouse_key && mouse_key[0])
     {
         bare_event = string_match (mouse_key, "*-event-*", 1);

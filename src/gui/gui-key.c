@@ -2395,23 +2395,33 @@ gui_key_pressed (const char *key_str)
     /* mouse event pending */
     if (gui_mouse_event_pending)
     {
+        int type = 1;
+        /* gui_chat_printf (NULL, "2: %s", gui_key_combo); */
         pos = strstr (gui_key_combo, "\x1B[M");
+        if (!pos)
+        {
+            pos = strstr (gui_key_combo, "\x1B[<");
+            type = 2;
+        }
         if (pos)
         {
             pos[0] = '\0';
+            /* gui_chat_printf (NULL, "3: %s", gui_key_combo); */
             if (!gui_window_bare_display)
                 gui_mouse_event_end ();
-            gui_mouse_event_init ();
+            gui_mouse_event_init (type);
         }
         goto end_no_input;
     }
 
-    if (strstr (gui_key_combo, "\x01[[M"))
+    if (strstr (gui_key_combo, "\x01[[M") || strstr (gui_key_combo, "\x01[[<"))
     {
+        int type = strstr (gui_key_combo, "\x01[[M") ? 1 : 2;
+        /* gui_chat_printf (NULL, "1: %s", gui_key_combo); */
         if (gui_key_debug)
             gui_key_debug_print_key (gui_key_combo, NULL, NULL, NULL, 1);
         gui_key_combo[0] = '\0';
-        gui_mouse_event_init ();
+        gui_mouse_event_init (type);
         goto end_no_input;
     }
 

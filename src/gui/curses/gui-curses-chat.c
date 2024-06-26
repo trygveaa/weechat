@@ -210,7 +210,7 @@ gui_chat_display_horizontal_line (struct t_gui_window *window, int simulate)
         read_marker_string = CONFIG_STRING(config_look_read_marker_string);
         if (!read_marker_string || !read_marker_string[0])
             read_marker_string = default_string;
-        size_on_screen = utf8_strlen_screen (read_marker_string);
+        size_on_screen = unicode_strlen_screen (read_marker_string);
         gui_window_set_weechat_color (GUI_WINDOW_OBJECTS(window)->win_chat,
                                       GUI_COLOR_CHAT_READ_MARKER);
         gui_chat_clrtoeol (window);
@@ -382,7 +382,7 @@ gui_chat_display_word_raw (struct t_gui_window *window, struct t_gui_line *line,
 {
     const char *ptr_char;
     char *output, utf_char[16], utf_char2[16];
-    int x, chars_displayed, display_char, size_on_screen, reverse_video;
+    int x, chars_displayed, display_char, size_char, size_on_screen, reverse_video;
 
     if (!simulate)
     {
@@ -403,7 +403,8 @@ gui_chat_display_word_raw (struct t_gui_window *window, struct t_gui_line *line,
         if (!string)
             return chars_displayed;
 
-        utf8_strncpy (utf_char, string, 1);
+        size_char = unicode_character_size (string, &size_on_screen);
+        utf8_strncpy (utf_char, string, size_char);
         if (utf_char[0])
         {
             reverse_video = 0;
@@ -428,7 +429,7 @@ gui_chat_display_word_raw (struct t_gui_window *window, struct t_gui_line *line,
             display_char = (window->buffer->type != GUI_BUFFER_TYPE_FREE)
                 || (x >= window->scroll->start_col);
 
-            size_on_screen = utf8_strlen_screen (ptr_char);
+            unicode_strlen(ptr_char, &size_on_screen);
             if ((max_chars_on_screen > 0)
                 && (chars_displayed + size_on_screen > max_chars_on_screen))
             {
@@ -439,8 +440,8 @@ gui_chat_display_word_raw (struct t_gui_window *window, struct t_gui_line *line,
             {
                 while (ptr_char && ptr_char[0])
                 {
-                    utf8_strncpy (utf_char2, ptr_char, 1);
-                    size_on_screen = utf8_char_size_screen (utf_char2);
+                    size_char = unicode_character_size (ptr_char, &size_on_screen);
+                    utf8_strncpy (utf_char2, ptr_char, size_char);
                     if (size_on_screen >= 0)
                     {
                         if (!simulate)
@@ -453,6 +454,13 @@ gui_chat_display_word_raw (struct t_gui_window *window, struct t_gui_line *line,
                             }
                             waddstr (GUI_WINDOW_OBJECTS(window)->win_chat,
                                      (output) ? output : utf_char2);
+
+                            if (size_on_screen > 1)
+                            {
+                                wnoutrefresh (GUI_WINDOW_OBJECTS(window)->win_chat);
+                                refresh ();
+                            }
+
                             if (reverse_video)
                             {
                                 wattroff (GUI_WINDOW_OBJECTS(window)->win_chat,
@@ -471,7 +479,7 @@ gui_chat_display_word_raw (struct t_gui_window *window, struct t_gui_line *line,
                         chars_displayed += size_on_screen;
                         x += size_on_screen;
                     }
-                    ptr_char = utf8_next_char (ptr_char);
+                    ptr_char += size_char;
                 }
             }
             else
@@ -480,7 +488,9 @@ gui_chat_display_word_raw (struct t_gui_window *window, struct t_gui_line *line,
             }
         }
 
-        string = utf8_next_char (string);
+        size_char = unicode_character_size (string, &size_on_screen);
+        string = string + size_char;
+        /* string = utf8_next_char (string); */
     }
 
     return chars_displayed;
@@ -2208,7 +2218,7 @@ gui_chat_draw_bare (struct t_gui_window *window)
                 if (ptr_line_end)
                     ptr_line_end[0] = '\0';
 
-                length = utf8_strlen_screen (ptr_line_start);
+                length = unicode_strlen_screen (ptr_line_start);
                 num_lines = length == 0 ? 1 : length / gui_term_cols;
                 if (length % gui_term_cols != 0)
                     num_lines++;
@@ -2249,7 +2259,7 @@ gui_chat_draw_bare (struct t_gui_window *window)
                 ptr_line_end = strchr (ptr_line_start, '\n');
                 if (ptr_line_end)
                     ptr_line_end[0] = '\0';
-                length = utf8_strlen_screen (ptr_line_start);
+                length = unicode_strlen_screen (ptr_line_start);
                 num_lines = length == 0 ? 1 : length / gui_term_cols;
                 if (length % gui_term_cols != 0)
                     num_lines++;

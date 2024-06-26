@@ -408,7 +408,7 @@ hook_command_format_args_description (const char *args_description)
         arg_name = string_strndup (arg_translated, pos - arg_translated);
         if (arg_name)
         {
-            length = utf8_strlen_screen (arg_name);
+            length = unicode_strlen_screen (arg_name);
             if (length > max_length_arg)
                 max_length_arg = length;
             free (arg_name);
@@ -451,7 +451,7 @@ hook_command_format_args_description (const char *args_description)
                 arg_name = string_strndup (ptr_line, pos - ptr_line);
                 if (arg_name)
                 {
-                    length = utf8_strlen_screen (arg_name);
+                    length = unicode_strlen_screen (arg_name);
                     for (j = length; j < max_length_arg; j++)
                     {
                         string_dyn_concat (result, " ", -1);

@@ -27,6 +27,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <wctype.h>
+#ifdef HAVE_UTF8PROC
+#include <utf8proc.h>
+#endif
 
 #include "weechat.h"
 #include "core-utf8.h"
@@ -236,8 +239,15 @@ utf8_prev_char (const char *string_start, const char *string)
 const char *
 utf8_next_char (const char *string)
 {
+    int char_size, char_size_screen;
+
     if (!string)
         return NULL;
+
+#ifdef HAVE_UTF8PROC
+    char_size = unicode_character_size (string, &char_size_screen);
+    return string + char_size;
+#endif
 
     /* UTF-8, 2 bytes: 110vvvvv 10vvvvvv */
     if (((unsigned char)(string[0]) & 0xE0) == 0xC0)
@@ -539,6 +549,91 @@ utf8_char_size_screen (const char *string)
     return wcwidth (codepoint);
 }
 
+#ifdef HAVE_UTF8PROC
+int
+unicode_grapheme_cluster_size (const char *string, int *size_screen)
+{
+    int size_total, size_screen_total;
+    const utf8proc_uint8_t *ptr_string;
+    utf8proc_int32_t codepoint, n, prev_codepoint, grapheme_state;
+
+    size_total = 0;
+    size_screen_total = 0;
+    ptr_string = (utf8proc_uint8_t *)string;
+    prev_codepoint = 0;
+    grapheme_state = 0;
+    while ((n = utf8proc_iterate (ptr_string, -1, &codepoint)) > 0 && codepoint)
+    {
+        if (prev_codepoint && utf8proc_grapheme_break_stateful (prev_codepoint, codepoint, &grapheme_state))
+        {
+            break;
+        }
+
+        size_total += n;
+
+        /*
+         * special chars not displayed (because not handled by WeeChat):
+         *   U+00AD: soft hyphen      (wcwidth == 1)
+         *   U+200B: zero width space (wcwidth == 0)
+         */
+        if ((codepoint == 0x00AD) || (codepoint == 0x200B))
+        {
+            // TODO: ensure that this is the only codepoint we read
+            *size_screen = -1;
+            return size_total;
+        }
+
+        if (codepoint == 0xFE0F)
+            size_screen_total += 1;
+        else
+            size_screen_total += utf8proc_charwidth (codepoint);
+
+        prev_codepoint = codepoint;
+        ptr_string += n;
+    }
+
+    if (size_screen_total > 2)
+        *size_screen = 2;
+    else
+        *size_screen = size_screen_total;
+
+    return size_total;
+}
+#endif
+
+int
+unicode_character_size (const char *string, int *size_screen)
+{
+    if (!string || !string[0])
+    {
+        *size_screen = 0;
+        return 0;
+    }
+
+    if (string[0] == '\t')
+    {
+        *size_screen = CONFIG_INTEGER(config_look_tab_width);
+        return 1;
+    }
+
+    /*
+     * chars < 32 are displayed with a letter/symbol and reverse video,
+     * so exactly one column
+     */
+    if (((unsigned char)string[0]) < 32)
+    {
+        *size_screen = 1;
+        return 1;
+    }
+
+#ifdef HAVE_UTF8PROC
+    return unicode_grapheme_cluster_size (string, size_screen);
+#endif
+
+    *size_screen = utf8_char_size_screen (string);
+    return utf8_char_size (string);
+}
+
 /*
  * Gets number of chars needed on screen to display the UTF-8 string.
  *
@@ -568,6 +663,44 @@ utf8_strlen_screen (const char *string)
         ptr_string = utf8_next_char (ptr_string);
     }
 
+    return size_screen;
+}
+
+int
+unicode_strlen (const char *string, int *size_screen)
+{
+    int size_char, size_total, size_screen_char, size_screen_total;
+    const char *ptr_string;
+
+    if (!string)
+        return 0;
+
+    // TODO
+    /* if (!local_utf8) */
+    /*     return utf8_strlen (string); */
+
+    size_total = 0;
+    size_screen_total = 0;
+    ptr_string = string;
+    while (ptr_string && ptr_string[0])
+    {
+        size_char = unicode_character_size (ptr_string, &size_screen_char);
+        /* count only chars that use at least one column */
+        if (size_screen_char > 0)
+            size_screen_total += size_screen_char;
+        size_total += size_char;
+        ptr_string += size_char;
+    }
+
+    *size_screen = size_screen_total;
+    return size_total;
+}
+
+int
+unicode_strlen_screen (const char *string)
+{
+    int size_screen;
+    unicode_strlen (string, &size_screen);
     return size_screen;
 }
 

@@ -95,6 +95,10 @@ if(ENABLE_ZSTD)
   include_directories(${LIBZSTD_INCLUDE_DIRS})
 endif()
 
+if(ENABLE_UTF8PROC)
+  include_directories(${LIBUTF8PROC_INCLUDE_DIRS})
+endif()
+
 if(ENABLE_CJSON)
   include_directories(${LIBCJSON_INCLUDE_DIRS})
 endif()

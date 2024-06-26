@@ -53,6 +53,10 @@ if(ENABLE_ZSTD)
   list(APPEND EXTRA_LIBS ${LIBZSTD_LDFLAGS})
 endif()
 
+if(ENABLE_UTF8PROC)
+  list(APPEND EXTRA_LIBS ${LIBUTF8PROC_LDFLAGS})
+endif()
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   # link with resolv lib on macOS
   list(APPEND EXTRA_LIBS "resolv")

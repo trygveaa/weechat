@@ -858,7 +858,7 @@ debug_unicode_char (unsigned int codepoint)
                      GUI_COLOR(GUI_COLOR_CHAT),
                      width,
                      utf8_char_size_screen (utf8_char),
-                     utf8_strlen_screen (utf8_char),
+                     unicode_strlen_screen (utf8_char),
                      gui_chat_strlen_screen (utf8_char));
 }
 
@@ -896,7 +896,7 @@ debug_unicode_string (const char *string)
                      GUI_COLOR(GUI_COLOR_CHAT_DELIMITERS),
                      GUI_COLOR(GUI_COLOR_CHAT),
                      width,
-                     utf8_strlen_screen (string),
+                     unicode_strlen_screen (string),
                      gui_chat_strlen_screen (string));
 
     free (wstring);
@@ -919,7 +919,7 @@ debug_unicode (const char *string)
                      _("Unicode: \"string\": "
                        "strlen %s/%s "
                        "utf8_strlen, gui_chat_strlen %s/%s "
-                       "wcswidth, utf8_strlen_screen, "
+                       "wcswidth, unicode_strlen_screen, "
                        "gui_chat_strlen_screen:"),
                      GUI_COLOR(GUI_COLOR_CHAT_DELIMITERS),
                      GUI_COLOR(GUI_COLOR_CHAT),
@@ -934,7 +934,7 @@ debug_unicode (const char *string)
                        "(hex codepoint, codepoint, UTF-8 sequence): "
                        "strlen %s/%s "
                        "utf8_strlen, gui_chat_strlen %s/%s "
-                       "wcwidth, utf8_char_size_screen, utf8_strlen_screen, "
+                       "wcwidth, utf8_char_size_screen, unicode_strlen_screen, "
                        "gui_chat_strlen_screen:"),
                      GUI_COLOR(GUI_COLOR_CHAT_DELIMITERS),
                      GUI_COLOR(GUI_COLOR_CHAT),

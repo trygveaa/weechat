@@ -617,6 +617,35 @@ TEST(CoreUtf8, Size)
     config_file_option_reset (config_look_tab_width, 1);
 }
 
+TEST(CoreUtf8, Size2)
+{
+    int size_screen;
+
+    LONGS_EQUAL(1, unicode_character_size ("a", &size_screen));
+    LONGS_EQUAL(1, size_screen);
+    LONGS_EQUAL(2, unicode_character_size ("ë", &size_screen));
+    LONGS_EQUAL(1, size_screen);
+    LONGS_EQUAL(3, unicode_character_size ("\u231A", &size_screen));
+    LONGS_EQUAL(2, size_screen);
+
+    LONGS_EQUAL(20, unicode_character_size ("\U0001F469\u200D\u2764\uFE0F\u200D\U0001F468", &size_screen));
+    LONGS_EQUAL(2, size_screen);
+    LONGS_EQUAL(25, unicode_character_size ("\U0001F468\u200D\U0001F469\u200D\U0001F467\u200D\U0001F466", &size_screen));
+    LONGS_EQUAL(2, size_screen);
+    LONGS_EQUAL(11, unicode_character_size ("\U0001F34B\u200D\U0001F7E9", &size_screen));
+    LONGS_EQUAL(2, size_screen);
+
+    LONGS_EQUAL(4, unicode_character_size ("\u0023\uFE0F", &size_screen));
+    LONGS_EQUAL(2, size_screen);
+    LONGS_EQUAL(5, unicode_character_size ("\u00A9\uFE0F", &size_screen));
+    LONGS_EQUAL(2, size_screen);
+    LONGS_EQUAL(6, unicode_character_size ("\u231A\uFE0F", &size_screen));
+    LONGS_EQUAL(2, size_screen);
+
+    LONGS_EQUAL(8, unicode_strlen ("a" "\x01" UNICODE_HAN_CHAR "\x02" "b", &size_screen));
+    LONGS_EQUAL(6, size_screen);
+}
+
 /*
  * Tests functions:
  *   utf8_strndup

@@ -100,6 +100,7 @@ option(ENABLE_HEADLESS       "Compile the headless binary"              ON)
 option(ENABLE_NLS            "Enable Native Language Support"           ON)
 option(ENABLE_LARGEFILE      "Enable Large File Support"                ON)
 option(ENABLE_ZSTD           "Enable Zstandard compression"             ON)
+option(ENABLE_UTF8PROC       "Enable ..."             ON)
 option(ENABLE_CJSON          "Enable cJSON support"                     ON)
 option(ENABLE_ALIAS          "Enable Alias plugin"                      ON)
 option(ENABLE_BUFLIST        "Enable Buflist plugin"                    ON)
@@ -225,6 +226,12 @@ find_package(ZLIB REQUIRED)
 if(ENABLE_ZSTD)
   pkg_check_modules(LIBZSTD REQUIRED libzstd)
   add_definitions(-DHAVE_ZSTD)
+endif()
+
+# Check for utf8proc
+if(ENABLE_UTF8PROC)
+  pkg_check_modules(LIBUTF8PROC REQUIRED libutf8proc)
+  add_definitions(-DHAVE_UTF8PROC)
 endif()
 
 # Check for cJSON

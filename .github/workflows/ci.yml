@@ -29,6 +29,7 @@ env:
     libperl-dev
     libphp-embed
     libsodium-dev
+    libutf8proc-dev
     libv8-dev
     libzstd-dev
     ninja-build

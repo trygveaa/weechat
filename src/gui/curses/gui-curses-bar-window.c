@@ -175,7 +175,7 @@ gui_bar_window_print_string (struct t_gui_bar_window *bar_window,
                              int hide_chars_if_scrolling,
                              int *index_item, int *index_subitem, int *index_line)
 {
-    int x_with_hidden, size_on_screen, reverse_video, hidden, color_bg;
+    int x_with_hidden, size_on_screen, reverse_video, hidden, color_bg, size_char;
     char utf_char[16], utf_char2[16], *output;
     const char *ptr_char;
 
@@ -345,7 +345,8 @@ gui_bar_window_print_string (struct t_gui_bar_window *bar_window,
                                                    1);
                 break;
             default:
-                utf8_strncpy (utf_char, string, 1);
+                size_char = unicode_character_size (string, &size_on_screen);
+                utf8_strncpy (utf_char, string, size_char);
                 reverse_video = 0;
                 ptr_char = utf_char;
                 if (utf_char[0] == '\t')
@@ -367,8 +368,8 @@ gui_bar_window_print_string (struct t_gui_bar_window *bar_window,
 
                 while (ptr_char && ptr_char[0])
                 {
-                    utf8_strncpy (utf_char2, ptr_char, 1);
-                    size_on_screen = utf8_char_size_screen (utf_char2);
+                    size_char = unicode_character_size(ptr_char, &size_on_screen);
+                    utf8_strncpy (utf_char2, ptr_char, size_char);
                     if (size_on_screen >= 0)
                     {
                         if (hide_chars_if_scrolling
@@ -395,6 +396,11 @@ gui_bar_window_print_string (struct t_gui_bar_window *bar_window,
                                 wattron (GUI_BAR_WINDOW_OBJECTS(bar_window)->win_bar, A_REVERSE);
                             waddstr (GUI_BAR_WINDOW_OBJECTS(bar_window)->win_bar,
                                      (output) ? output : utf_char2);
+                            if (size_on_screen > 1)
+                            {
+                                wnoutrefresh (GUI_BAR_WINDOW_OBJECTS(bar_window)->win_bar);
+                                refresh ();
+                            }
                             if (reverse_video)
                                 wattroff (GUI_BAR_WINDOW_OBJECTS(bar_window)->win_bar, A_REVERSE);
                             free (output);
@@ -408,9 +414,10 @@ gui_bar_window_print_string (struct t_gui_bar_window *bar_window,
                             *x += size_on_screen;
                         }
                     }
-                    ptr_char = utf8_next_char (ptr_char);
+                    ptr_char += size_char;
                 }
-                string = utf8_next_char (string);
+                size_char = unicode_character_size(string, &size_on_screen);
+                string = string + size_char;
                 break;
         }
     }
@@ -841,7 +848,7 @@ gui_bar_window_draw (struct t_gui_bar_window *bar_window,
                 else
                 {
                     ptr_string = CONFIG_STRING(config_look_bar_more_up);
-                    x = bar_window->width - utf8_strlen_screen (ptr_string);
+                    x = bar_window->width - unicode_strlen_screen (ptr_string);
                     if (x < 0)
                         x = 0;
                 }
@@ -862,7 +869,7 @@ gui_bar_window_draw (struct t_gui_bar_window *bar_window,
                 ptr_string = (bar_filling == GUI_BAR_FILLING_HORIZONTAL) ?
                     CONFIG_STRING(config_look_bar_more_right) :
                     CONFIG_STRING(config_look_bar_more_down);
-                x = bar_window->width - utf8_strlen_screen (ptr_string);
+                x = bar_window->width - unicode_strlen_screen (ptr_string);
                 if (x < 0)
                     x = 0;
                 y = (bar_window->height > 1) ? bar_window->height - 1 : 0;

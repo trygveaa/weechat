@@ -1274,7 +1274,7 @@ config_check_prefix_align_more (const void *pointer, void *data,
     (void) data;
     (void) option;
 
-    return (utf8_strlen_screen (value) == 1) ? 1 : 0;
+    return (unicode_strlen_screen (value) == 1) ? 1 : 0;
 }
 
 /*
@@ -1291,7 +1291,7 @@ config_check_prefix_buffer_align_more (const void *pointer, void *data,
     (void) data;
     (void) option;
 
-    return (utf8_strlen_screen (value) == 1) ? 1 : 0;
+    return (unicode_strlen_screen (value) == 1) ? 1 : 0;
 }
 
 /*
@@ -1308,7 +1308,7 @@ config_check_separator (const void *pointer, void *data,
     (void) data;
     (void) option;
 
-    return (utf8_strlen_screen (value) <= 1) ? 1 : 0;
+    return (unicode_strlen_screen (value) <= 1) ? 1 : 0;
 }
 
 /*

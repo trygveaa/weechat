@@ -159,7 +159,7 @@ gui_chat_strlen (const char *string)
 int
 gui_chat_strlen_screen (const char *string)
 {
-    int length, size_on_screen;
+    int length, size_on_screen, size_char;
 
     length = 0;
     while (string && string[0])
@@ -168,10 +168,10 @@ gui_chat_strlen_screen (const char *string)
                                             (unsigned char *)string, 0, 0, 0);
         if (string)
         {
-            size_on_screen = utf8_char_size_screen (string);
+            size_char = unicode_character_size (string, &size_on_screen);
             if (size_on_screen > 0)
                 length += size_on_screen;
-            string = utf8_next_char (string);
+            string += size_char;
         }
     }
     return length;
@@ -182,6 +182,7 @@ gui_chat_strlen_screen (const char *string)
  * colors/attributes).
  */
 
+// TODO
 const char *
 gui_chat_string_add_offset (const char *string, int offset)
 {
@@ -207,7 +208,7 @@ gui_chat_string_add_offset (const char *string, int offset)
 const char *
 gui_chat_string_add_offset_screen (const char *string, int offset_screen)
 {
-    int size_on_screen;
+    int size_on_screen, size_char;
 
     while (string && string[0] && (offset_screen >= 0))
     {
@@ -216,14 +217,14 @@ gui_chat_string_add_offset_screen (const char *string, int offset_screen)
                                             0, 0, 0);
         if (string)
         {
-            size_on_screen = utf8_char_size_screen (string);
+            size_char = unicode_character_size (string, &size_on_screen);
             if (size_on_screen > 0)
             {
                 offset_screen -= size_on_screen;
                 if (offset_screen < 0)
                     return string;
             }
-            string = utf8_next_char (string);
+            string += size_char;
         }
     }
     return string;
@@ -245,7 +246,7 @@ int
 gui_chat_string_real_pos (const char *string, int pos, int use_screen_size)
 {
     const char *real_pos, *real_pos_prev, *ptr_string;
-    int size_on_screen;
+    int size_char, size_on_screen;
 
     if (pos <= 0)
         return 0;
@@ -260,10 +261,10 @@ gui_chat_string_real_pos (const char *string, int pos, int use_screen_size)
                                                 0, 0, 0);
         if (ptr_string)
         {
-            size_on_screen = utf8_char_size_screen (ptr_string);
+            size_char = unicode_character_size (ptr_string, &size_on_screen);
             if (size_on_screen > 0)
                 pos -= (use_screen_size) ? size_on_screen : 1;
-            ptr_string = utf8_next_char (ptr_string);
+            ptr_string += size_char;
             real_pos_prev = real_pos;
             real_pos = ptr_string;
         }
@@ -319,7 +320,7 @@ gui_chat_get_word_info (struct t_gui_window *window,
                         int *word_length_with_spaces, int *word_length)
 {
     const char *start_data, *next_char, *next_char2;
-    int leading_spaces, char_size_screen;
+    int leading_spaces, char_size, char_size_screen;
 
     *word_start_offset = 0;
     *word_end_offset = 0;
@@ -335,7 +336,9 @@ gui_chat_get_word_info (struct t_gui_window *window,
                                                (unsigned char *)data, 0, 0, 0);
         if (next_char)
         {
-            next_char2 = utf8_next_char (next_char);
+            char_size = unicode_character_size(next_char, &char_size_screen);
+            next_char2 = next_char + char_size;
+            /* next_char2 = utf8_next_char (next_char); */
             if (next_char2)
             {
                 if (next_char[0] == '\n')
@@ -351,7 +354,7 @@ gui_chat_get_word_info (struct t_gui_window *window,
                         *word_start_offset = next_char - start_data;
                     leading_spaces = 0;
                     *word_end_offset = next_char2 - start_data;
-                    char_size_screen = utf8_char_size_screen (next_char);
+                    unicode_character_size (next_char, &char_size_screen);
                     if (char_size_screen > 0)
                         (*word_length_with_spaces) += char_size_screen;
                     if (*word_length < 0)

@@ -231,6 +231,7 @@ target_link_libraries(tests
   ${CURL_LIBRARIES}
   ${ZLIB_LIBRARY}
   ${LIBZSTD_LDFLAGS}
+  ${LIBUTF8PROC_LDFLAGS}
   ${CPPUTEST_LIBRARIES}
   -rdynamic
 )
